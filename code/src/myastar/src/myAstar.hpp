@@ -305,6 +305,16 @@ void get_reduced_path(V source,V target,Edge **path,int64_t &size)
     }
   }
 }
+int get_psuedo_edge_count(Edge **path,int64_t size)
+{
+  int count=0;
+  for (int i = 0; i < size; ++i)
+  {
+    if (path[i].type!=0)
+      count++;
+  }
+  return count;
+}
 void astar_on_contracted(int64_t src,int64_t dest,Edge **path,int64_t &size)
 {
   Edge *mainPath=NULL;
@@ -346,8 +356,10 @@ void astar_on_contracted(int64_t src,int64_t dest,Edge **path,int64_t &size)
       visitor(my_astar_goal_visitor<V>(target)));
   }
     catch(found_goal fg) { // found a path to the goal
-      get_reduced_path(source,target,&mainPath,size);  
-      int total_size=size+src_size+target_size;
+      get_reduced_path(source,target,&mainPath,size);
+      int num_psuedo_edges=get_psuedo_edge_count(mainPath,size);
+
+      int total_size=size+src_size+target_size+num_psuedo_edges;
       cout << "total path size is " << total_size << endl;
       *path=(Edge*)malloc(total_size*sizeof(Edge));
       int temp_size=0;
@@ -359,12 +371,34 @@ void astar_on_contracted(int64_t src,int64_t dest,Edge **path,int64_t &size)
         (*path)[i].cost=srcPath[i-temp_size].cost;
       }
       temp_size=src_size;
+      int ind=src_size;
       for (int i = src_size; i < src_size+size; ++i)
       {
-        (*path)[i].id=(mainPath)[i-temp_size].id;
-        (*path)[i].source=(mainPath)[i-temp_size].source;
-        (*path)[i].target=(mainPath)[i-temp_size].target;
-        (*path)[i].cost=(mainPath)[i-temp_size].cost;
+        if (path[ind].type==0)
+        {
+          (*path)[ind].id=(mainPath)[i-temp_size].id;
+          (*path)[ind].source=(mainPath)[i-temp_size].source;
+          (*path)[ind].target=(mainPath)[i-temp_size].target;
+          (*path)[ind++].cost=(mainPath)[i-temp_size].cost;
+        }
+        else
+        {
+          int64_t id=(mainPath)[ind].id;
+          pair<E,E> pedges=psuedo_E[id];
+          Edge e1=reduced_graph->graph[pedges.first];
+          Edge e2=reduced_graph->graph[pedges.second];
+          // 1st edge
+          (*path)[ind].id=e1.id;
+          (*path)[ind].source=e1.source;
+          (*path)[ind].target=e1.target;
+          (*path)[ind++].cost=e1.cost;
+
+          //2nd edge
+          (*path)[ind].id=e2.id;
+          (*path)[ind].source=e2.source;
+          (*path)[ind].target=e2.target;
+          (*path)[ind++].cost=e2.cost;
+        }
       }
       temp_size=src_size+size;
       for (int i = src_size+size; i < total_size; ++i)
