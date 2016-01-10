@@ -72,16 +72,23 @@ void check(Edge *edges,int num_vertices,int num_edges,int level)
 	//fp=fopen(path.c_str(),"w+");
 	typedef Graph_Minimizer<G> Graph;
 	Graph g(UNDIRECTED,num_vertices);
-	g.initialize_graph(edges,num_edges);
+	g.initialize_graph_minimizer(edges,num_edges);
 	g.print_Degree_Vertices();
 	//cout << "Contracting...." << endl;
 	g.contract_to_level(level);
-	g.print_removed_vertices();
+	//g.print_removed_vertices();
+	//g.print_removed_edges();
+	char *name,*edgestring;
+	g.getGraphName(&name,level);
+	cout << "name:- " << name << endl;
+
 	int deg;
 	//g.get_degree(144,deg);
 	//cout << "degree of 144 is " << deg << endl;
 	Edge *reduced=NULL;
 	int final_edges=g.getreducedGraph(&reduced);
+	g.getEdgeString(&reduced,final_edges,&edgestring);
+	cout << "Edges:- " << edgestring << endl;
 	//cout << "final_edges " << final_edges << endl;
 	for (int i = 0; i < final_edges && reduced[i].id>0; ++i)
 	{
@@ -102,17 +109,14 @@ void check(Edge *edges,int num_vertices,int num_edges,int level)
 		cout << "id:- " << e.id << ", " << "source:- " << e.source << ", target:- " << e.target << endl;
 		ids.pop_front();
 	}*/
-	Edge *path=NULL;
-	int64_t path_size=0;
-	g.dijkstra_on_contracted(6,10,&path,path_size);
-	g.print_path(&path,path_size);
+	
 }
 
 int main(int argc, char const *argv[])
 {
 	Edge* edges;
 	//int num_edges=18;
-	int num_vertices=11;
+	int num_vertices=12;
 	//edges=(Edge*)malloc(sizeof(Edge)*num_edges);
 	//string filename="/home/rohith/mystuff/labwork/3-1/codes/data/txt/berlin.txt";
 	string filename="ways.txt";
@@ -120,7 +124,7 @@ int main(int argc, char const *argv[])
 	int num_edges=loadGraph(filename,&edges);
  	//check(edges,num_vertices,num_edges,0);
  	//check(edges,num_vertices,num_edges,1);
- 	check(edges,num_vertices,num_edges,0);
+ 	check(edges,num_vertices,num_edges,1);
 
 	return 0;
 }

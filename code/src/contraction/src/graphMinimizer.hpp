@@ -24,11 +24,20 @@ Edge types:
 #include "../../common/src/structs.h"
 using namespace std;
 using namespace boost;
+namespace patch
+{
+    template < typename T > std::string to_string( const T& n )
+	{
+		std::ostringstream stm ;
+		stm << n ;
+		return stm.str() ;
+	}
+}
 template < class G >
 class Graph_Minimizer
 :public  My_base_graph<G> {
 public:
-	 My_base_graph<G> *reduced_graph;
+	My_base_graph<G> *reduced_graph;
   //constrictor for this class which inherits the base graph
 	explicit Graph_Minimizer(graphType gtype, const int initial_size)
 	: My_base_graph<G>(gtype, initial_size) {
@@ -46,8 +55,8 @@ public:
 	typedef typename std::vector<V>::iterator Q_i;
 	typedef typename boost::graph_traits < G >::out_edge_iterator EO_i;
 	typedef typename std::map<V,deque<Edge> >::iterator removed_V_i;
-	typedef typename std::map<int64_t , pair<E,E> > psuedo_E;
-	typedef typename std::map<int64_t , pair<E,E> >::iterator psuedo_E_i;
+	typedef typename std::map<int64_t , pair<int64_t,int64_t> > psuedo_E;
+	typedef typename std::map<int64_t , pair<int64_t,int64_t> >::iterator psuedo_E_i;
 	int64_t last_edge_id;
 	typedef deque<Edge> unpackedPath;
 	unpackedPath source_un_p,target_un_p;
@@ -135,8 +144,8 @@ public:
 			//cout << "Edge count" << num_edges(reduced_graph->graph) << endl;
 			//cout << "Front " << reduced_graph->graph[front].id << endl;
 			neighbors_desc.clear();
-				front=two_degree_vertices_0.front();
-				reduced_graph->get_vertex_id(front,front_id);
+			front=two_degree_vertices_0.front();
+			reduced_graph->get_vertex_id(front,front_id);
 			if (reduced_graph->graph[front].contractions==0)
 			{
 				/* code */
@@ -170,33 +179,37 @@ public:
 					int64_t eid;
 					bool b1=edge(tdesc1, tdesc2,reduced_graph->graph).second;
 					bool b2=edge(tdesc2, tdesc1,reduced_graph->graph).second;
-				//cout << b1 << "," << b2 << endl;
+					//cout << b1 << "," << b2 << endl;
 					if ( b1 || b2)
 					{
 						E edesc=edge(tdesc1, tdesc2,reduced_graph->graph).first;
 						eid=reduced_graph->graph[edesc].id;
 						float dist=reduced_graph->graph[edesc].cost;
-						if (fabs(min_distance-dist)>=0.000001)
+						//cout  << "min dist " << min_distance << ", actual dist " << dist << endl; 
+						if (min_distance-dist>=0.000001)
 						{
+						//cout << "yes" << endl;
 							min_distance=dist;
 						}
 						else
 						{
+							//cout << "Updating shortcut " << "(" << eid1 << ", " << eid2 << ")" << " with " << min_distance << endl;
 							reduced_graph->graph[edesc].cost=min_distance;
 							reduced_graph->graph[edesc].type=1;
 						}
 					}
 					else
 					{
+						//cout << "no" << endl;
 						shortcut.id=++last_edge_id;
 						eid=shortcut.id;
 						shortcut.source=tid1;
-						shortcut.target=tid2;
+						shortcut.target=tid2; 
 						shortcut.cost=min_distance;
 						shortcut.type=2;
 						reduced_graph->graph_add_edge(shortcut);
 					}
-					psuedoEdges[eid]=make_pair(edesc1,edesc2);
+					psuedoEdges[eid]=make_pair(eid1,eid2);
 					Edge removed_edge;
 					for (int i = 0; i < 2; ++i)
 					{
@@ -308,7 +321,7 @@ public:
 							shortcut.type=2;
 							reduced_graph->graph_add_edge(shortcut);
 						}
-						psuedoEdges[eid]=make_pair(edesc1,edesc2);
+						psuedoEdges[eid]=make_pair(eid1,eid2);
 					}
 				}
 				Edge removed_edge;
@@ -350,6 +363,7 @@ public:
 					(*reduced_list)[count].source=source_id;
 					(*reduced_list)[count].target=target_id;
 					(*reduced_list)[count].cost=reduced_graph->graph[*out].cost;
+					(*reduced_list)[count].type=reduced_graph->graph[*out].type;
 					count++;
 				}
 				
@@ -398,6 +412,8 @@ public:
 		}
 	}
 
+	
+
 	void print_psuedo_edges()
 	{
 
@@ -406,7 +422,17 @@ public:
 			cout << "e1: " << iter->second.first << ",e: "<< iter->first << ",e2: " << iter->second.second << endl;
 		}
 	}
-
+	void print_removed_edges()
+	{
+		cout<< "Printing removed_edges of size " << this->reduced_graph->removed_edges.size() << endl;
+		for (map<int64_t,Edge>::iterator iter = this->reduced_graph->removed_edges.begin(); iter != this->reduced_graph->removed_edges.end(); iter++)
+		{
+			cout << "id: " << iter->first << endl;
+			Edge temp=iter->second ;
+			cout << "(" << temp.source<< ", " << temp.target << "), ";
+			cout << endl;
+		}
+	}
 
 	void find_source_vertex(int64_t origId,int64_t &compId,unpackedPath &unpack)
 	{
@@ -471,8 +497,30 @@ public:
 		cout << "Path for dijkstra......" << endl; 
 		for (int i = 0; i < size; ++i)
 		{
-			cout << "id:- " << (*path)[i].id << " src:- " << (*path)[i].source << " dest:- " << (*path)[i].target << " cost " << (*path)[i].cost << endl;
+			cout << "id:- " << (*path)[i].id << " src:- " << (*path)[i].source << " dest:- " << (*path)[i].target << " cost " << (*path)[i].cost << " type " << (*path)[i].type << endl;
 		}
+	}
+
+
+	void getGraphName(char **name,int level)
+	{
+		string gname="contracted_graph_"+patch::to_string(level);
+		(*name)=strdup(gname.c_str());
+	}
+
+	void getEdgeString(Edge **edges,int num_edges,char **estring)
+	{
+		string edgestring="";
+		for (int i = 0; i < num_edges; ++i)
+		{
+			string id=patch::to_string((*edges)[i].id);
+			string source=patch::to_string((*edges)[i].source);
+			string target=patch::to_string((*edges)[i].target);
+			string cost=patch::to_string((*edges)[i].cost);
+			string reverse_cost=patch::to_string((*edges)[i].revcost);
+			edgestring+=id+","+source+","+target+","+cost+","+reverse_cost+"$";
+		}
+		(*estring)=strdup(edgestring.c_str());
 	}
 };
 #endif

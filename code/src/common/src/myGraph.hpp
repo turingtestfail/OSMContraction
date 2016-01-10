@@ -43,7 +43,7 @@ public:
   V_to_id  V_id_map;  //V--->id mapping
 
   // A queue of removed edges (stored because u may need to add them back later)
-  std::deque<Edge> removed_edges;
+  std::map<int64_t,Edge> removed_edges;
 
   //used by My_dijkstra class as it inherits My_base_graph
   std::vector<V> predecessors;
@@ -107,6 +107,7 @@ public:
       graph[e].source=edge.target;
       graph[e].target=edge.source;
   		graph[e].id = edge.id;
+      graph[e].type=0;
   	}
   }
 
@@ -124,10 +125,12 @@ public:
             d_edge.id = graph[*out].id;
             d_edge.source = graph[source(*out, graph)].id;
             d_edge.target = graph[target(*out, graph)].id;
-            //cout << "Removing " << d_edge.source << " " << d_edge.target << endl;
+            
             d_edge.cost = graph[*out].cost;
             d_edge.revcost = -1;
-            removed_edges.push_back(d_edge);
+            removed_edges[d_edge.id]=d_edge;
+            //cout << "Removing " << removed_edges[d_edge.id].source << " " << removed_edges[d_edge.id].target << endl;
+            //cout << "removed edges size " << removed_edges.size() << endl;
       }
 
       if (gType == DIRECTED) {
@@ -139,7 +142,7 @@ public:
                 d_edge.target = graph[target(*in, graph)].id;
                 d_edge.cost = graph[*in].cost;
                 d_edge.revcost = -1;
-                removed_edges.push_back(d_edge);
+                removed_edges[d_edge.id]=d_edge;
           }
       }
 
@@ -185,7 +188,7 @@ public:
               out != out_end; ++out) {
               std::cout << ' ' << *out << "=(" << graph[source(*out, graph)].id
                         << ", " << graph[target(*out, graph)].id << ") = "
-                        <<  graph[*out].cost <<"\t";
+                        <<  graph[*out].cost << " id " << graph[*out].id<<"\t";
             }
             std::cout << std::endl;
         }
@@ -263,13 +266,25 @@ public:
                 d_edge.target = graph[target(*out, graph)].id;
                 d_edge.cost = graph[*out].cost;
                 d_edge.revcost = -1;
-                removed_edges.push_back(d_edge);
+                removed_edges[d_edge.id]=d_edge;
             }
       }
       // the actual removal
       boost::remove_edge(g_from, g_to, graph);
   }
 
+
+void print_removed_edges()
+  {
+      cout<< "Printing removed_edges of size " << removed_edges.size() << endl;
+    for (map<int64_t,Edge>::iterator iter = removed_edges.begin(); iter != removed_edges.end(); iter++)
+    {
+      cout << "id: " << iter->first << endl;
+      Edge temp=iter->second ;
+      cout << "(" << temp.source<< ", " << temp.target << "), ";
+      cout << endl;
+    }
+  }
 
 };
 

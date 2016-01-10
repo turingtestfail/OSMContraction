@@ -1,5 +1,4 @@
 #include "../src/myDijkstra.hpp"
-#include "../../myastar/src/myAstar.hpp"
 #include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 #include <stdio.h>
@@ -67,12 +66,23 @@ typedef adjacency_list<vecS, vecS, undirectedS, Vertex,Edge> G;
 void check(Edge *edges,int num_vertices,int num_edges,int level)
 {
 	FILE *fp;
-	typedef My_Astar<G> Graph;
+	typedef My_dijkstra<G> Graph;
 	Graph g(UNDIRECTED,num_vertices);
 	g.initialize_graph(edges,num_edges);
 	//g.print_Degree_Vertices();
 	//cout << "Contracting...." << endl;
+	//g.print_removed_vertices();
+	//g.print_psuedo_edges();
+	long int close_id;
+	deque<Edge> ids;
+	Edge *path=NULL;
+	int64_t path_size=0;
+	//g.print_graph();
+	g.perform_dijkstra(6,4,&path,path_size);
+	//g.print_predecessors();
+	g.print_path(&path,path_size);
 	g.contract_to_level(level);
+	//g.print_removed_edges();
 	//g.print_removed_vertices();
 	int deg;
 	//g.get_degree(144,deg);
@@ -82,22 +92,14 @@ void check(Edge *edges,int num_vertices,int num_edges,int level)
 	//cout << "final_edges " << final_edges << endl;
 	for (int i = 0; i < final_edges && reduced[i].id>0; ++i)
 	{
-		//cout << "id:- " << reduced[i].id << ", " << "source:- " << reduced[i].source << ", target:- " << reduced[i].target << endl;
+		//cout << "id:- " << reduced[i].id << ", " << "source:- " << reduced[i].source << ", target:- " << reduced[i].target << ", type:- " << reduced[i].type << endl;
 		//fprintf(fp, "%d,%d,%d,%f\n"
 		//			,reduced[i].id,reduced[i].source,reduced[i].target,reduced[i].cost);
 
 	}
-	//g.print_removed_vertices();
-	//g.print_psuedo_edges();
-	long int close_id;
-	deque<Edge> ids;
-	Edge *path=NULL;
-	int64_t path_size=0;
-	g.perform_astar(6,10,&path,path_size);
-	//g.print_predecessors();
-	g.print_path(&path,path_size);
 	path_size=0;
-	g.astar_on_contracted(6,10,&path,path_size);
+	//g.contract_to_level(level);
+	g.dijkstra_on_contracted(6,4,&path,path_size);
 	//g.print_reduced_predecessors();
 	g.print_path(&path,path_size);
 }
@@ -106,7 +108,7 @@ int main(int argc, char const *argv[])
 {
 	Edge* edges;
 	//int num_edges=18;
-	int num_vertices=11;
+	int num_vertices=12;
 	//edges=(Edge*)malloc(sizeof(Edge)*num_edges);
 	//string filename="/home/rohith/mystuff/labwork/3-1/codes/data/txt/berlin.txt";
 	string filename="ways.txt";
@@ -114,7 +116,7 @@ int main(int argc, char const *argv[])
 	int num_edges=loadGraph(filename,&edges);
  	//check(edges,num_vertices,num_edges,0);
  	//check(edges,num_vertices,num_edges,1);
- 	check(edges,num_vertices,num_edges,0);
+ 	check(edges,num_vertices,num_edges,1);
 
 	return 0;
 }

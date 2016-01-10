@@ -247,7 +247,7 @@ void get_path(V source,V target,Edge **path,int64_t &size)
       temp=this->predecessors[temp];
     }
     size=path_size;
-    cout << "Path is of size " << path_size << endl;
+    //cout << "Path is of size " << path_size << endl;
     (*path)=(Edge *)malloc(sizeof(Edge)*path_size);
     int temp_size=path_size-1;
     temp=target;
@@ -286,20 +286,32 @@ void get_reduced_path(V source,V target,Edge **path,int64_t &size)
       temp=this->reduced_graph->predecessors[temp];
     }
     size=path_size;
-    cout << "Path is of size " << path_size << endl;
+    //cout << "Path is of size " << path_size << endl;
     (*path)=(Edge *)malloc(sizeof(Edge)*path_size);
     int temp_size=path_size-1;
     temp=target;
-    int64_t sid=-1,tid=-1;
+    int64_t sid=-1,tid=-1,etype=0,eid=-1;
     while(this->reduced_graph->predecessors[temp]!=temp)
     {
+      V v1=this->reduced_graph->predecessors[temp];
+      V v2=temp;
       this->reduced_graph->get_vertex_id(this->reduced_graph->predecessors[temp],sid);
       this->reduced_graph->get_vertex_id(temp,tid);
-      (*path)[temp_size].id=temp_size;
+
+      if (edge(v1, v2,this->reduced_graph->graph).second)
+      {
+        E e=edge(v2, v1,this->reduced_graph->graph).first;
+        etype=this->reduced_graph->graph[e].type;
+        eid=this->reduced_graph->graph[e].id;
+      }
+      
+      
+      (*path)[temp_size].id=eid;
       (*path)[temp_size].source=sid;
       (*path)[temp_size].target=tid;
       (*path)[temp_size].cost=this->reduced_graph->distances[temp]-this->reduced_graph->distances[this->predecessors[temp]];
-       // cout << "id:- " << (*path)[temp_size].id << " src:- " << (*path)[temp_size].source << " dest:- " << (*path)[temp_size].target << " cost " << (*path)[temp_size].cost << endl;
+      (*path)[temp_size].type=etype;
+       //cout <<"yo," << "id:- " << e1.id << " src:- " << e1.source << " dest:- " << e1.target << " cost " << e1.cost << " type "<< e1.type << endl;
       temp_size--;
       temp=this->reduced_graph->predecessors[temp];
     }
@@ -310,7 +322,7 @@ int get_psuedo_edge_count(Edge **path,int64_t size)
   int count=0;
   for (int i = 0; i < size; ++i)
   {
-    if (path[i].type!=0)
+    if ((*path)[i].type!=0)
       count++;
   }
   return count;
@@ -325,9 +337,9 @@ void astar_on_contracted(int64_t src,int64_t dest,Edge **path,int64_t &size)
   this->find_target_vertex(dest,closest_target,targetPath);
   src_size=srcPath.size();
   target_size=targetPath.size();
-  cout << "source:- " << closest_src << ", target:- " << closest_target << endl;
-  cout << "source size: " << src_size << endl;
-  cout << "target size: " << target_size << endl;
+  //cout << "source:- " << closest_src << ", target:- " << closest_target << endl;
+  //cout << "source size: " << src_size << endl;
+  //cout << "target size: " << target_size << endl;
   this->reduced_graph->predecessors.clear();
   this->reduced_graph->distances.clear();
   this->reduced_graph->predecessors.resize(boost::num_vertices(this->reduced_graph->graph));
@@ -357,58 +369,70 @@ void astar_on_contracted(int64_t src,int64_t dest,Edge **path,int64_t &size)
   }
     catch(found_goal fg) { // found a path to the goal
       get_reduced_path(source,target,&mainPath,size);
-      int num_psuedo_edges=get_psuedo_edge_count(mainPath,size);
+int num_psuedo_edges=get_psuedo_edge_count(&mainPath,size);
 
-      int total_size=size+src_size+target_size+num_psuedo_edges;
-      cout << "total path size is " << total_size << endl;
-      *path=(Edge*)malloc(total_size*sizeof(Edge));
-      int temp_size=0;
-      for (int i = 0; i < src_size; ++i)
-      {
-        (*path)[i].id=srcPath[i-temp_size].id;
-        (*path)[i].source=srcPath[i-temp_size].source;
-        (*path)[i].target=srcPath[i-temp_size].target;
-        (*path)[i].cost=srcPath[i-temp_size].cost;
-      }
-      temp_size=src_size;
-      int ind=src_size;
-      for (int i = src_size; i < src_size+size; ++i)
-      {
-        if (path[ind].type==0)
-        {
-          (*path)[ind].id=(mainPath)[i-temp_size].id;
-          (*path)[ind].source=(mainPath)[i-temp_size].source;
-          (*path)[ind].target=(mainPath)[i-temp_size].target;
-          (*path)[ind++].cost=(mainPath)[i-temp_size].cost;
-        }
-        else
-        {
-          int64_t id=(mainPath)[ind].id;
-          pair<E,E> pedges=psuedo_E[id];
-          Edge e1=reduced_graph->graph[pedges.first];
-          Edge e2=reduced_graph->graph[pedges.second];
-          // 1st edge
-          (*path)[ind].id=e1.id;
-          (*path)[ind].source=e1.source;
-          (*path)[ind].target=e1.target;
-          (*path)[ind++].cost=e1.cost;
+int total_size=size+src_size+target_size+num_psuedo_edges;
+//cout << "total path size is " << total_size << endl;
+*path=(Edge*)malloc(total_size*sizeof(Edge));
 
-          //2nd edge
-          (*path)[ind].id=e2.id;
-          (*path)[ind].source=e2.source;
-          (*path)[ind].target=e2.target;
-          (*path)[ind++].cost=e2.cost;
-        }
-      }
-      temp_size=src_size+size;
-      for (int i = src_size+size; i < total_size; ++i)
-      {
-        (*path)[i].id=targetPath[i-temp_size].id;
-        (*path)[i].source=targetPath[i-temp_size].source;
-        (*path)[i].target=targetPath[i-temp_size].target;
-        (*path)[i].cost=targetPath[i-temp_size].cost;
-      }
-      size=total_size;
+int temp_size=0;
+for (int i = 0; i < src_size; ++i)
+{
+  (*path)[i].id=srcPath[i-temp_size].id;
+  (*path)[i].source=srcPath[i-temp_size].source;
+  (*path)[i].target=srcPath[i-temp_size].target;
+  (*path)[i].cost=srcPath[i-temp_size].cost;
+}
+temp_size=src_size;
+int ind=src_size;
+//cout << "finished src path" << endl;
+for (int i = src_size; i < src_size+size; ++i)
+{
+  if ((mainPath)[ind].type==0)
+  {
+    (*path)[ind].id=(mainPath)[i-temp_size].id;
+    (*path)[ind].source=(mainPath)[i-temp_size].source;
+    (*path)[ind].target=(mainPath)[i-temp_size].target;
+    (*path)[ind++].cost=(mainPath)[i-temp_size].cost;
+  }
+  else
+  {
+    int64_t sid=(mainPath)[ind].source;
+    int64_t tid=(mainPath)[ind].target;
+    int64_t id=(mainPath)[ind].id;
+    //cout << "id:- " << id << endl;
+    pair<int64_t,int64_t> pedges=this->psuedoEdges[id];
+    //cout << "id1:- " << pedges.first << " id2:- " << pedges.second << endl;
+    Edge e1=this->reduced_graph->removed_edges[pedges.first];
+    Edge e2=this->reduced_graph->removed_edges[pedges.second];
+    //cout << "Psuedo" << endl;
+  //cout << "id:- " << e1.id << " src:- " << e1.source << " dest:- " << e1.target << " cost " << e1.cost << " type "<< e1.type << endl;
+    // 1st edge
+    (*path)[ind].id=e1.id;
+    (*path)[ind].source=e1.source;
+    (*path)[ind].target=e1.target;
+    (*path)[ind++].cost=e1.cost;
+    //cout << "id:- " << e2.id << " src:- " << e2.source << " dest:- " << e2.target << " cost " << e2.cost << " type "<< e2.type << endl;
+    //2nd edge
+    (*path)[ind].id=e2.id;
+    (*path)[ind].source=e2.source;
+    (*path)[ind].target=e2.target;
+    (*path)[ind++].cost=e2.cost;
+  }
+}
+temp_size=src_size+size;
+//cout << "finished main path" << endl;
+for (int i = src_size+size; i < total_size-num_psuedo_edges; ++i)
+{
+  (*path)[ind].id=targetPath[i-temp_size].id;
+  (*path)[ind].source=targetPath[i-temp_size].source;
+  (*path)[ind].target=targetPath[i-temp_size].target;
+  (*path)[ind++].cost=targetPath[i-temp_size].cost;
+}
+size=total_size;
+//cout << "finished target path" << endl;
+
+//mainPath=NULL;
       return;
     }
 

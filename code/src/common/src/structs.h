@@ -30,4 +30,16 @@ typedef struct
 //represents the type of graph
 enum graphType { UNDIRECTED= 0, DIRECTED};
 
+typedef struct 
+{
+	char *my_contracted_graph_name;
+	char *contracted_blob;
+} pgr_contracted_blob;
+
+
+typedef struct 
+{
+	int len1,len2;
+} Lens;
+
 #endif

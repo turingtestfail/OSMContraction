@@ -7,8 +7,7 @@
 extern "C" {
 #endif
 
-int compute_contracted_graph(Edge *edges,int num_vertices,int num_edges,int level,Edge **final_edges);
-
+int fetch_contracted_graph(Edge *edges,int num_vertices,int initial_num_edges,int *final_num_edges,int level,Edge **final_edges,char **graphName,char **edgeString);
 
 
 #ifdef __cplusplus

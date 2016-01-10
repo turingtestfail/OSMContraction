@@ -120,7 +120,7 @@ Functions for pgr_foo with sql:
 
 }
 int fetch_astar_edge_columns(int (*edge_columns)[9],int (*edge_types)[9], bool has_rcost) 
- {
+{
 
   int error;
   error = fetch_column_info(&(*edge_columns)[0], &(*edge_types)[0], "id");
@@ -257,7 +257,7 @@ void fetch_astar_edge(
 
 }*/
 int
-fetch_data(char *sql, Edge **edges,int *count,bool rcost)
+fetch_data(char *sql, Edge **edges,int *edge_count,bool rcost)
 {
     //bool sourceFound = false;
     //bool targetFound = false;
@@ -350,6 +350,7 @@ fetch_data(char *sql, Edge **edges,int *count,bool rcost)
               fetch_edge(&tuple, &tupdesc, &edge_columns, &edge_types,
                &(*edges)[total_tuples - ntuples + t], has_rcost);
 
+
           /*if (!sourceFound
              && (((*edges)[total_tuples - ntuples + t].source == start_vertex)
                  || ((*edges)[total_tuples - ntuples + t].target == start_vertex))) {
@@ -360,6 +361,8 @@ fetch_data(char *sql, Edge **edges,int *count,bool rcost)
         targetFound = true;
 }*/
       }
+
+             
       SPI_freetuptable(tuptable);
     }
     else {
@@ -391,7 +394,8 @@ fetch_data(char *sql, Edge **edges,int *count,bool rcost)
   }
 
 //(*totalTuples) = total_tuples;
-  return total_tuples;
+   *edge_count=total_tuples;
+  return 0;
 }
 
 int
@@ -531,4 +535,45 @@ void print_data(char buf[8192])
 int add_one(int a)
 {
   return a+1;
+}
+
+
+//function used to insert
+int execq(char *sql,int cnt)
+{
+  int ret;
+  int proc = 0;
+  
+  SPI_connect();
+  elog(INFO, "Executing %s .....",sql);
+  ret = SPI_exec(sql, cnt);
+  
+  proc = SPI_processed;
+  /*
+   * If this is SELECT and some tuple(s) fetched -
+   * returns tuples to the caller via elog (NOTICE).
+   */
+   if ( ret == SPI_OK_SELECT && SPI_processed > 0 )
+   {
+    TupleDesc tupdesc = SPI_tuptable->tupdesc;
+    SPITupleTable *tuptable = SPI_tuptable;
+    char buf[8192];
+    int i;
+    
+    for (ret = 0; ret < proc; ret++)
+    {
+      HeapTuple tuple = tuptable->vals[ret];
+      
+      for (i = 1, buf[0] = 0; i <= tupdesc->natts; i++)
+        sprintf(buf + strlen (buf), " %s%s",
+          SPI_getvalue(tuple, tupdesc, i),
+          (i == tupdesc->natts) ? " " : " |");
+      elog (NOTICE, "EXECQ: %s", buf);
+    }
+  }
+
+  SPI_finish();
+return (proc);
+  
+
 }

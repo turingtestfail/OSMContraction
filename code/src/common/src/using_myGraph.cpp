@@ -1,4 +1,5 @@
 #include "myGraph.hpp"
+#include "baseGraph.hpp"
 #include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 using namespace std;
@@ -7,8 +8,8 @@ typedef adjacency_list<vecS, vecS, undirectedS, Vertex,Edge> G;
 int main(int argc, char const *argv[])
 {
 	/* code */
-	typedef My_base_graph<G> Graph;
-	Graph g(UNDIRECTED,3);
+	typedef Pgr_base_graph<G> Graph;
+	Graph g(UNDIRECTED,1);
 	Edge *edges=NULL;
 	edges=(Edge*)malloc(2*sizeof(Edge));
 	edges[0].id=0;
@@ -22,7 +23,7 @@ int main(int argc, char const *argv[])
 	edges[1].target=2;
 	edges[1].cost=4;
 	edges[1].revcost=-1;
-	g.insert_data(edges,2);
+	g.graph_insert_data(edges,2);
 	//g.remove_vertex(0);
 	g.print_graph();
 	return 0;
